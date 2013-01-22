@@ -25,12 +25,15 @@ class Errur
 		$this->AirbrakeClient = $AirbrakeClient;
 	}
 
-	public static function init($template, $AirbrakeAPIKey)
+	public static function init($template, $AirbrakeAPIKey, $is_dev)
 	{
 		if (!isset(self::$instance)) {
 
+			// Dev or Live?
+			$deployment = ($is_dev)? "Development" : "Production";
+
 			// Init Airbrake, yay
-			$AirbrakeConfig = new Airbrake\Configuration($AirbrakeAPIKey, array());
+			$AirbrakeConfig = new Airbrake\Configuration($AirbrakeAPIKey, array('environmentName' => $deployment));
 			$AirbrakeClient = new Airbrake\Client($AirbrakeConfig);
 
 			self::$instance = new self($template, $AirbrakeClient);
