@@ -25,10 +25,9 @@ class Errur
 		$this->AirbrakeClient = $AirbrakeClient;
 	}
 
-	public static function init($AirbrakeAPIKey, $is_dev)
+	public static function init($template, $AirbrakeAPIKey, $is_dev)
 	{
 		if (!isset(self::$instance)) {
-            $template = file_get_contents('templates/shared/html/phperror_dev.html');
                 
 			// Dev or Live?
 			$deployment = ($is_dev)? "Development" : "Production";
