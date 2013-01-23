@@ -25,10 +25,11 @@ class Errur
 		$this->AirbrakeClient = $AirbrakeClient;
 	}
 
-	public static function init($template, $AirbrakeAPIKey, $is_dev)
+	public static function init($AirbrakeAPIKey, $is_dev)
 	{
 		if (!isset(self::$instance)) {
-
+            $template = file_get_contents('templates/shared/html/phperror_dev.html');
+                
 			// Dev or Live?
 			$deployment = ($is_dev)? "Development" : "Production";
 
@@ -39,6 +40,7 @@ class Errur
 			self::$instance = new self($template, $AirbrakeClient);
 
 			set_error_handler(array(self::$instance, 'onError'));
+            set_exception_handler(array(self::$instance, 'onException'));
 		}
 
 		return self::$instance;
@@ -49,9 +51,9 @@ class Errur
 		// Get stack trace
 		$backtrace = array();
 		foreach (debug_backtrace() as $p => $t) {
-			$backtrace[] = $t['class'] . $t['type'] . $t['function'] . '():' . $t['line'];
+            $backtrace[] = (isset($t['class'])? $t['class'] : '' ) . (isset($t['type']) ? $t['type'] : '') . (isset($t['function']) ? $t['function'] : '{main}') . '():' . (isset($t['line']) ? $t['line'] : 'unknown');
 		}
-		$backtrace = implode('<br/>', array_reverse($trace));
+		$backtrace = implode('<br/>', array_reverse($backtrace));
 
 		// Build keywords
 		$keywords = array('[ERROR_NUMB]' => $errorNumber, '[ERROR_MSG]' => $errorString, '[ERROR_FILE]' => $errorFile, '[ERROR_LINE]' => $errorLine, '[ERROR_TRACE]' => $backtrace);
@@ -74,5 +76,31 @@ class Errur
 		die();
 	}
 
+	public function onException($exception)
+	{
+		// Get stack trace
+		$backtrace = $exception->getTrace(); 
+        $backtrace_str = $exception->getTraceAsString();
+
+		// Build keywords
+		$keywords = array('[ERROR_NUMB]' => $exception->getCode(), '[ERROR_MSG]' => $exception->getMessage(), '[ERROR_FILE]' => $exception->getFile(), '[ERROR_LINE]' => $exception->getLine(), '[ERROR_TRACE]' => $backtrace_str);
+
+		// Replace keywords
+		foreach ($keywords as $keyword => $content) {
+			$this->template = str_replace($keyword, $content, $this->template);
+		}
+
+		// Clear screen
+		ob_end_clean();
+
+		// Print out template
+		echo $this->template;
+
+		// Notify Airbrake
+		$this->AirbrakeClient->notifyOnError($exception->getMessage(), $backtrace);
+
+		// Kill output
+		die();
+	}
 }
 ?>
