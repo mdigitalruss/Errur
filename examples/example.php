@@ -11,7 +11,7 @@ require ("/home/www-data/lib/errur/errur.php");
 $template = file_get_contents("example_error.html");
 
 // Init the class (add your api key, too)
-Errur::init($template, 'YOUR_API_KEY_GOES_HERE');
+Errur::init($template, 'YOUR_API_KEY_GOES_HERE', false);
 
 // Now cause an error
 $errorVar = 1 / 0;
